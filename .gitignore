@@ -1,0 +1,7 @@
+**/*.csv
+**/requests.*
+**/*.dcm
+**/*.log.
+**/.venv/
+**/*.out
+**/*.pyc

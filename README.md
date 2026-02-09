@@ -207,29 +207,61 @@ python main.py -c config/dicom.yml -o c-move
 ```
 
 **Retry failed requests:**
-```bash
-# Failed requests are tracked in requests.failed
-# Re-running automatically retries them
-python main.py -c config/dicom.yml -o c-move
+
+After c-move completes, check the statistics output for failures:
+
 ```
+============================================================
+BATCH PROCESSING STATISTICS
+============================================================
+Total Requests:      1710
+Successful:          1695 (99.1%)
+Failed:              15        <-- If this is > 0, retry needed
+============================================================
+```
+
+If there are failures, repeat the following steps until statistics show 0 failures:
+
+1. Generate a retry CSV from `requests.failed`:
+   ```bash
+   python retry_failed.py requests.failed -o data/failed_retry.csv
+   ```
+
+2. Update your config file to use the retry CSV:
+   ```yaml
+   c-move:
+     elements_batch_file: data/failed_retry.csv
+   ```
+
+3. Run c-move again:
+   ```bash
+   python main.py -c config/dicom.yml -o c-move
+   ```
+
+4. Check statistics. If failures remain, repeat from step 1.
 
 ## Command Line Reference
 
 ```
 usage: main.py [-h] [-c CONFIG] [-o {c-find,c-move}] [--dry-run]
 
-PYDICOM Batch Processing Tool
-
 options:
   -h, --help            show this help message and exit
   -c, --config CONFIG   Path to config file (default: config/dicom-template.yml)
   -o, --operation       Operation: c-find or c-move (default: c-find)
   --dry-run             Validate config without executing
+```
 
-Examples:
-  python main.py -c config/dicom.yml -o c-find
-  python main.py -c config/dicom.yml -o c-move
-  python main.py -c config/dicom.yml -o c-move --dry-run
+```
+usage: retry_failed.py [-h] [-o OUTPUT] input
+
+Convert requests.failed to CSV for retry
+
+positional arguments:
+  input                 Path to requests.failed file
+
+options:
+  -o, --output OUTPUT   Output CSV file (default: stdout)
 ```
 
 ## Project Structure
@@ -240,6 +272,7 @@ pydicom-batch-v2/
 ├── common.py            # Config loading and orchestration
 ├── scu.py               # DICOM SCU (query/retrieve operations)
 ├── scp.py               # DICOM SCP (receive images)
+├── retry_failed.py      # Convert requests.failed to retry CSV
 ├── config/
 │   ├── dicom-template.yml.example
 │   └── dicom.yml        # Your configuration
