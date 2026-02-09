@@ -1,0 +1,59 @@
+common:
+  pacs:
+    hostname: 10.128.228.146
+    port: 5000
+    aet: ALI_QUERY_SCP
+  local:
+    port: 4000
+    aet: MHI_A6000_01
+  schedule:
+    enabled: False
+    start_time: '18:30'
+    end_time: '6:45'
+    timezone: America/New_York
+
+c-find:
+  threads: 8
+  throttle_time: 0
+  model: study
+  elements_batch_file: /volume/pydicom-batch-v2/data/database-c-find_XA-2024-mai-to-august-test.csv # Will act as an additional filter. The column names must match the elements below.
+  elements:
+    - PatientID=*
+    - StudyDate=20240101-20240831 # Format: Nothing or YYYYMMDD-YYYYMMDD. Always valid wether you are at the STUDY or SERIES level.
+    - PatientName=*
+    - AccessionNumber=*
+    - StudyInstanceUID=*
+    - StudyDescription=*
+    - ModalitiesInStudy=XA # XA, MR, CT, etc. Better to define it.
+    - QueryRetrieveLevel=STUDY # STUDY or SERIES. If SERIES, then fields below MUST be used and you can comment out ModalitiesInStudy if you want. If STUDY, then you need to comment out SeriesInstanceUID, SeriesDescription and Modality.
+    # - Modality=*
+    # - SeriesInstanceUID=*
+    # - SeriesDescription=*
+
+  output:
+    directory: data
+    database_file: /volume/pydicom-batch-v2/data/database.csv
+
+c-move: # Note that it is 2x faster transferring STUDY level than SERIES level.
+  threads: 8
+  throttle_time: 0
+  model: study # Same as QueryRetrieveLevel
+  elements_batch_file: /volume/pydicom-batch-v2/data/database.csv  # The column names must match the elements below.
+  elements:
+    - PatientID=*
+    - StudyInstanceUID=*
+    - QueryRetrieveLevel=STUDY # STUDY or SERIES. If SERIES, then fields below MUST be used and model should be series. If STUDY, then you need to comment out SeriesInstanceUID, SeriesDescription and Modality.
+    # - Modality=*
+    # - SeriesInstanceUID=*
+    # - SeriesDescription=*
+
+  output:
+    directory: /volume/pydicom-batch-v2/results-STUDY
+    database_file: /volume/pydicom-batch-v2/results-STUDY/database.csv
+    directory_structure: PatientID/StudyInstanceUID/SeriesInstanceUID
+    filename: SOPInstanceUID
+    decompress: False # Better to keep it False so images are not decompressed and not altered.
+  anonymization:
+    enabled: False
+    script: /volume/pydicom-batch-v2/config/sample-dicom-anonymizer.script
+    lookup_table: /volume/pydicom-batch-v2/config/sample-lookup-table.properties 
