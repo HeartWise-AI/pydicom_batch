@@ -52,18 +52,11 @@ nano config/dicom.yml
 # Query studies (C-FIND)
 python main.py -c config/dicom.yml -o c-find
 
-# Retrieve images (C-MOVE) using batch file from config
+# Retrieve images (C-MOVE)
 python main.py -c config/dicom.yml -o c-move
-
-# Retrieve images (C-MOVE) with explicit batch file
-python main.py -c config/dicom.yml -o c-move -b data/studies.csv
 
 # Validate config without executing
 python main.py -c config/dicom.yml -o c-move --dry-run
-
-# Retry failed requests
-python retry_failed.py requests.failed -o data/failed_retry.csv
-python main.py -c config/dicom.yml -o c-move -b data/failed_retry.csv
 ```
 
 ## Configuration Reference
@@ -214,33 +207,49 @@ python main.py -c config/dicom.yml -o c-move
 ```
 
 **Retry failed requests:**
-```bash
-# Convert requests.failed to a CSV for retry
-python retry_failed.py requests.failed -o data/failed_retry.csv
 
-# Re-run c-move with the retry CSV
-python main.py -c config/dicom.yml -o c-move -b data/failed_retry.csv
+After c-move completes, check the statistics output for failures:
+
 ```
+============================================================
+BATCH PROCESSING STATISTICS
+============================================================
+Total Requests:      1710
+Successful:          1695 (99.1%)
+Failed:              15        <-- If this is > 0, retry needed
+============================================================
+```
+
+If there are failures, repeat the following steps until statistics show 0 failures:
+
+1. Generate a retry CSV from `requests.failed`:
+   ```bash
+   python retry_failed.py requests.failed -o data/failed_retry.csv
+   ```
+
+2. Update your config file to use the retry CSV:
+   ```yaml
+   c-move:
+     elements_batch_file: data/failed_retry.csv
+   ```
+
+3. Run c-move again:
+   ```bash
+   python main.py -c config/dicom.yml -o c-move
+   ```
+
+4. Check statistics. If failures remain, repeat from step 1.
 
 ## Command Line Reference
 
 ```
-usage: main.py [-h] [-c CONFIG] [-o {c-find,c-move}] [-b BATCH_FILE] [--dry-run]
-
-PYDICOM Batch Processing Tool
+usage: main.py [-h] [-c CONFIG] [-o {c-find,c-move}] [--dry-run]
 
 options:
   -h, --help            show this help message and exit
   -c, --config CONFIG   Path to config file (default: config/dicom-template.yml)
   -o, --operation       Operation: c-find or c-move (default: c-find)
-  -b, --batch BATCH     Override elements_batch_file from config
   --dry-run             Validate config without executing
-
-Examples:
-  python main.py -c config/dicom.yml -o c-find
-  python main.py -c config/dicom.yml -o c-move
-  python main.py -c config/dicom.yml -o c-move -b data/studies.csv
-  python main.py -c config/dicom.yml -o c-move --dry-run
 ```
 
 ```
@@ -252,11 +261,7 @@ positional arguments:
   input                 Path to requests.failed file
 
 options:
-  -h, --help            show this help message and exit
   -o, --output OUTPUT   Output CSV file (default: stdout)
-
-Examples:
-  python retry_failed.py requests.failed -o data/failed_retry.csv
 ```
 
 ## Project Structure
