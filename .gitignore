@@ -1,0 +1,5 @@
+**/*.csv
+**/requests.*
+**/*.dcm
+**/*.log.
+**/.venv/
