@@ -311,7 +311,7 @@ sudo firewall-cmd --list-ports
 
 ## Acknowledgments
 
-Based on [pydicom-batch](https://github.com/therlaup/pydicom-batch) by [@therlaup](https://github.com/therlaup).
+Based on [pydicom-batch](https://github.com/therlaup/pydicom-batch) by [@therlaup](https://github.com/therlaup) and [@cacoool](https://github.com/cacoool).
 
 Built with:
 - [pydicom](https://github.com/pydicom/pydicom) - DICOM file handling
