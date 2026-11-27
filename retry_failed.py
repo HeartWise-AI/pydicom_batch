@@ -4,6 +4,8 @@ import ast
 import csv
 import sys
 
+from csv_safety import neutralize_row, restore_cell
+
 
 def parse_elements(elements_str):
     """Parse the elements string into a dictionary."""
@@ -36,7 +38,7 @@ def main():
     with open(args.input, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            elements = parse_elements(row['elements'])
+            elements = parse_elements(restore_cell(row['elements']))
             out_row = {
                 'AccessionNumber': elements.get('AccessionNumber', ''),
                 'ModalitiesInStudy': elements.get('Modality', ''),
@@ -47,7 +49,7 @@ def main():
                 'StudyDescription': '',
                 'StudyInstanceUID': elements.get('StudyInstanceUID', ''),
             }
-            rows.append(out_row)
+            rows.append(neutralize_row(out_row))
 
     if args.output:
         outfile = open(args.output, 'w', newline='')

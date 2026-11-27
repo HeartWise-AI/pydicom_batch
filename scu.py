@@ -17,6 +17,7 @@ import threading
 import logging
 import logging.handlers
 from collections import defaultdict
+from csv_safety import neutralize_row, restore_cell
 
 # Module logger
 logger = logging.getLogger('pydicom_batch')
@@ -355,13 +356,14 @@ def request_from_csv(filepath):
                 clean_row = {}
                 for key, value in row.items():
                     if key is not None:  # Skip None keys from malformed CSV
-                        clean_row[key] = str(value) if value is not None else ""
+                        clean_row[key] = restore_cell(str(value)) if value is not None else ""
                 rows.append(hashabledict(clean_row))
         return rows
     else:
         return []
 
 def dict_to_csv(write_dict, filepath, fieldnames):
+    write_dict = neutralize_row(write_dict)
     if os.path.exists(filepath):
         with open(filepath, 'a', newline='', ) as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=sorted(fieldnames), dialect='excel')
@@ -551,7 +553,7 @@ def create_requests(config):
                 for row in sorted_rows:
                     row_request = config['request'].copy()
                     for key in row:
-                        row_request['elements'] = add_element_to_list(row_request['elements'], key, row[key])
+                        row_request['elements'] = add_element_to_list(row_request['elements'], key, restore_cell(row[key]))
                     row_request['elements'] = sorted(row_request['elements'])
                     requests.append(row_request)
         else:
