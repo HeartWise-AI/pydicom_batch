@@ -1,11 +1,11 @@
 common:
   pacs:
-    hostname: 10.128.228.146
-    port: 5000
-    aet: ALI_QUERY_SCP
+    hostname: pacs.example.com
+    port: 104
+    aet: PACS_AET
   local:
     port: 4000
-    aet: MHI_A6000_01
+    aet: MY_AET
   schedule:
     enabled: False
     start_time: '18:30'
