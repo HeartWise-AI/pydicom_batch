@@ -40,11 +40,13 @@ pip install -r requirements.txt
 
 ```bash
 # Copy template
-cp config/dicom-template.yml.example config/dicom.yml
+cp config/dicom-template.yml config/dicom.yml
 
 # Edit with your PACS settings
 nano config/dicom.yml
 ```
+
+`config/dicom-template.yml` contains placeholders only. Keep real PACS hostnames, ports and AE titles in `config/dicom.yml` (or another untracked file under `config/`), which is gitignored. Treat AE titles as credentials: many PACS authorize callers by AE title alone.
 
 ### Basic Usage
 
@@ -66,8 +68,8 @@ python main.py -c config/dicom.yml -o c-move --dry-run
 ```yaml
 common:
   pacs:
-    hostname: 10.128.228.146    # PACS server IP/hostname
-    port: 5000                   # PACS port
+    hostname: pacs.example.com   # PACS server IP/hostname
+    port: 104                    # PACS port
     aet: PACS_AET               # PACS Application Entity Title
   local:
     port: 4000                   # Local port for receiving images
@@ -124,7 +126,7 @@ Before processing, the tool automatically:
 
 ```
 Running pre-flight checks...
-Testing PACS connectivity: 10.128.228.146:5000
+Testing PACS connectivity: pacs.example.com:104
 C-ECHO successful - PACS is reachable
 CSV validated: 1710 studies, columns: ['AccessionNumber', 'PatientID', ...]
 All pre-flight checks passed
@@ -274,8 +276,8 @@ pydicom-batch-v2/
 ├── scp.py               # DICOM SCP (receive images)
 ├── retry_failed.py      # Convert requests.failed to retry CSV
 ├── config/
-│   ├── dicom-template.yml.example
-│   └── dicom.yml        # Your configuration
+│   ├── dicom-template.yml   # Placeholder template
+│   └── dicom.yml        # Your configuration (gitignored)
 ├── data/
 │   ├── studies.csv      # C-FIND results
 │   ├── requests.whole   # All requests

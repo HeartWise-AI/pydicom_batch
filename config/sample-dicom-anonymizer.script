@@ -1,11 +1,11 @@
 <script>
  <p t="DATEINC">-137</p>
  <p t="PROFILENAME">DICOM-PS3.15E-Basic</p>
- <p t="PROJECTNAME">CathEF</p>
+ <p t="PROJECTNAME">Project</p>
  <p t="SHORTNAME">Project</p>
  <p t="SITEID">0</p>
- <p t="SITENAME">UOHI</p>
- <p t="TRIALNAME">EPX</p>
+ <p t="SITENAME">SiteName</p>
+ <p t="TRIALNAME">Trial</p>
  <p t="UIDROOT">9</p>
  <e en="T" t="00080005" n="SpecificCharacterSet">@keep()</e>
  <e en="F" t="00080008" n="ImageType"></e>
