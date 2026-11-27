@@ -832,7 +832,7 @@ class SCU(object):
             ae.requested_contexts = QueryRetrievePresentationContexts
                 
         elif self.config['request']['type'].lower() == 'c-echo':
-            ae.requested_contexts = [VerificationSOPClass]
+            ae.requested_contexts = [Verification]
 
         elif self.config['request']['type'].lower() == 'c-move':
             ae.requested_contexts = QueryRetrievePresentationContexts
@@ -862,16 +862,20 @@ class SCU(object):
                     
 
     def retry_association(self):
-        for i in range(100):
+        # Exponential backoff (2 s doubling to 60 s, 30 attempts). Retrying every second from 10 threads made a
+        # PACS that was already resetting connections reset everything from our AE (DeepEcho 2020/2021 retrieval).
+        backoff = 2
+        for i in range(30):
             if not self.association.is_established:
-                time.sleep(1)
-                logger.warning(f'Re-trying association (attempt {i+1}/100)')
+                time.sleep(backoff)
+                logger.warning(f'Re-trying association (attempt {i+1}/30, backoff {backoff}s)')
                 self.association = self.establish_association()
+                backoff = min(backoff * 2, 60)
             else:
                 logger.debug('Association re-established successfully')
                 return
-        
-        logger.critical('Failed to establish association after 100 attempts')
+
+        logger.critical('Failed to establish association after 30 attempts')
         sys.exit(1)
 
 
@@ -1002,7 +1006,14 @@ class SCU(object):
             if self.association.is_established:
                 try:
                     responses = self.association.send_c_move(identifier, self.config['local']['aet'], self.query_model)
+                    completed_subops = 0
                     for (status, rsp_identifier) in responses:
+                        # Completed sub-operations over every response (pending and final): some SCPs report
+                        # the count only on pending messages.
+                        if status:
+                            count = getattr(status, 'NumberOfCompletedSuboperations', None)
+                            if count is not None:
+                                completed_subops = max(completed_subops, int(count))
                         if status and status.Status in [0xFF00]:
                             # Status pending
                             pass
@@ -1018,7 +1029,10 @@ class SCU(object):
                             
                             request_duration = time.time() - request_start
 
-                            if status.Status in [0x0000]:
+                            # Complete only with a final Success AND at least one image moved. A 0x0000 with no
+                            # completed sub-operations (destination outage, offline objects) goes to failed, so it
+                            # is retried instead of silently counting as done with 0 images (DeepEcho 2020/2021).
+                            if status.Status in [0x0000] and completed_subops > 0:
                                 filepath_requests_completed = os.path.join(self.config['output']['directory'], 'requests.completed')
                                 dict_to_csv(request, filepath_requests_completed, request.keys())
                                 logger.debug(f"C-MOVE completed: PatientID={patient_id}, StudyUID={study_uid[:30]}... ({request_duration:.2f}s)")
