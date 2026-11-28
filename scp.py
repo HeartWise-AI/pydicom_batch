@@ -11,6 +11,8 @@ from pynetdicom.apps.common import ElementPath
 import inquirer
 import shutil
 
+from dicom_tls import server_ssl_context
+
 from pydicom.uid import (
     ExplicitVRLittleEndian,
     ImplicitVRLittleEndian,
@@ -172,7 +174,8 @@ class SCP(object):
         temp_dir = os.path.join(self.config['output']['directory'],'tmp')
         os.makedirs(temp_dir, exist_ok = True)
         handlers = [(evt.EVT_C_STORE, self.handle_store), (evt.EVT_C_ECHO, self.handle_echo)]
-        self.scp = self.ae.start_server(('', self.config['local']['port']), block=False, evt_handlers=handlers)
+        self.scp = self.ae.start_server(('', self.config['local']['port']), block=False, evt_handlers=handlers,
+            ssl_context=server_ssl_context(self.config))
 
     def stop_server(self):
         old_qsize = self.writing_queue.qsize()

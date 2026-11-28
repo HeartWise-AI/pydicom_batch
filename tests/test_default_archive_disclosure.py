@@ -86,6 +86,9 @@ def is_placeholder_label(value):
 @pytest.fixture(autouse=True)
 def _in_repo(monkeypatch):
     monkeypatch.chdir(ROOT)
+    # The template's TLS files are placeholders, and the endpoint checks below
+    # read the A-ASSOCIATE-RQ bytes, which TLS would encrypt.
+    monkeypatch.setattr("scu.client_tls_args", lambda config: None)
     logging.disable(logging.CRITICAL)
     yield
     logging.disable(logging.NOTSET)

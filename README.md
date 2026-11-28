@@ -74,6 +74,10 @@ common:
   local:
     port: 4000                   # Local port for receiving images
     aet: MY_AET                  # Your Application Entity Title
+  security:                      # Required: every association uses TLS
+    ca_file: config/tls/pacs-ca.pem        # CA that signed the PACS certificate
+    cert_file: config/tls/storage-scp.pem  # Certificate the local storage SCP presents
+    key_file: config/tls/storage-scp.key
   schedule:
     enabled: false               # Enable scheduled extraction windows
     start_time: '18:30'
@@ -113,6 +117,15 @@ c-move:
     filename: SOPInstanceUID
     decompress: false
 ```
+
+### TLS
+
+Associations carry patient identifiers and images, so the C-ECHO check, C-FIND, C-MOVE and the local storage SCP only run over TLS. The tool refuses to start when `common.security` is missing.
+
+- `ca_file`: CA that signed the PACS certificate. The certificate must be valid for `pacs.hostname`; an untrusted or mismatched certificate fails the pre-flight check.
+- `cert_file` / `key_file`: certificate and key the storage SCP presents to the PACS (C-MOVE only). Configure the PACS to send to this AE over TLS and to trust this certificate.
+
+If the PACS only speaks plain DICOM, terminate TLS in front of it (for example with a TLS proxy on the PACS host) rather than sending cleartext across the network. Keep certificates and keys out of git; `config/` is gitignored except the template.
 
 ## Features In-Depth
 

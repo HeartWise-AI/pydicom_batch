@@ -1,6 +1,7 @@
 import yaml
 from scu import process_request_batch, setup_logging
 from scp import SCP
+from dicom_tls import validate_security
 import os
 import sys
 import logging
@@ -31,6 +32,9 @@ def merge_configs(config, operation):
     # Add anonymization settings for c-move if they exist
     if operation == 'c-move' and 'anonymization' in config[operation]:
         merged['anonymization'] = config[operation]['anonymization']
+
+    if 'security' in config['common']:
+        merged['security'] = config['common']['security']
         
     return merged
 
@@ -62,6 +66,13 @@ def pydicombatch(config_file, operation, dry_run=False):
         logger.info(f"Running {operation.upper()} extraction defined in: {config_file}")
         logger.info(f"PACS: {merged_config['pacs']['hostname']}:{merged_config['pacs']['port']} (AET: {merged_config['pacs']['aet']})")
         logger.info(f"Local AET: {merged_config['local']['aet']}")
+
+        try:
+            validate_security(merged_config, operation)
+        except (ValueError, OSError) as exc:
+            logger.error(f"TLS configuration error: {exc}")
+            print(f"\nTLS configuration error: {exc}")
+            return
 
         if operation == 'c-move' and not dry_run:
             scp = SCP(merged_config)
