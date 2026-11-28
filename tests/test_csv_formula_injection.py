@@ -7,6 +7,8 @@ quote. Other archive values are written unchanged.
 import csv
 import os
 import socket
+import ssl
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -48,6 +50,27 @@ def free_port():
         return sock.getsockname()[1]
 
 
+CERT_DIR = tempfile.TemporaryDirectory()
+ARCHIVE_CERT = os.path.join(CERT_DIR.name, "archive.pem")
+ARCHIVE_KEY = os.path.join(CERT_DIR.name, "archive.key")
+
+
+def setUpModule():
+    subprocess.run(
+        [
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+            "-keyout", ARCHIVE_KEY, "-out", ARCHIVE_CERT,
+            "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1",
+        ],
+        check=True,
+        capture_output=True,
+    )
+
+
+def tearDownModule():
+    CERT_DIR.cleanup()
+
+
 def read_rows(path):
     with open(path, newline="") as handle:
         return list(csv.DictReader(handle))
@@ -86,10 +109,13 @@ class Archive:
         for context in contexts:
             self.ae.add_supported_context(context)
         self.port = free_port()
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(ARCHIVE_CERT, ARCHIVE_KEY)
         self.ae.start_server(
             ("127.0.0.1", self.port),
             block=False,
             evt_handlers=handlers,
+            ssl_context=context,
         )
 
     def stop(self):
@@ -112,6 +138,7 @@ def run_find(directory, elements, handler, description_filter=None):
             "threads": 1,
         },
         "output": {"directory": directory, "database_file": "database.csv"},
+        "security": {"ca_file": ARCHIVE_CERT},
     }
     if description_filter is not None:
         config["request"]["description_filter"] = description_filter
@@ -230,6 +257,7 @@ class FormulaInjectionTests(unittest.TestCase):
                     "threads": 1,
                 },
                 "output": {"directory": move_dir, "database_file": "database.csv"},
+                "security": {"ca_file": ARCHIVE_CERT},
             }
 
             def handle_move(event):

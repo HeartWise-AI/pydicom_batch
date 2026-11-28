@@ -9,3 +9,5 @@ config/*
 !config/dicom-template.yml
 !config/sample-dicom-anonymizer.script
 !config/sample-lookup-table.properties
+*.pem
+*.key

@@ -18,6 +18,7 @@ import logging
 import logging.handlers
 from collections import defaultdict
 from csv_safety import neutralize_row, restore_cell
+from dicom_tls import client_tls_args
 
 # Module logger
 logger = logging.getLogger('pydicom_batch')
@@ -247,7 +248,8 @@ def preflight_check(config):
         assoc = ae.associate(
             config['pacs']['hostname'],
             config['pacs']['port'],
-            ae_title=config['pacs']['aet']
+            ae_title=config['pacs']['aet'],
+            tls_args=client_tls_args(config)
         )
         
         if assoc.is_established:
@@ -813,6 +815,7 @@ class SCU(object):
     """
     def __init__(self, config):
         self.config = config
+        self.tls_args = client_tls_args(config)
         self.ae = self.create_ae()
         self.query_model = self.create_query_model()
         self.pbar = None
@@ -843,7 +846,8 @@ class SCU(object):
         return self.ae.associate(self.config['pacs']['hostname'], 
             self.config['pacs']['port'],  
             ae_title=self.config['pacs']['aet'],
-            max_pdu=16382)
+            max_pdu=16382,
+            tls_args=self.tls_args)
 
     def wait_until_scheduled_time(self):
         

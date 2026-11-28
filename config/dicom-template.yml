@@ -6,6 +6,10 @@ common:
   local:
     port: 4000
     aet: MY_AET
+  security: # TLS is required for every association. There is no cleartext mode.
+    ca_file: config/tls/pacs-ca.pem # CA that signed the PACS certificate. The certificate must be valid for pacs.hostname.
+    cert_file: config/tls/storage-scp.pem # Certificate the local storage SCP presents to the PACS during C-MOVE.
+    key_file: config/tls/storage-scp.key
   schedule:
     enabled: False
     start_time: '18:30'
